@@ -1,4 +1,4 @@
--- AUTO CLICK HUB - FINAL FIXED (KEYBIND FUNCIONANDO)
+-- AUTO CLICK HUB - DEFINITIVO (SEM BUGS)
 
 local UIS = game:GetService("UserInputService")
 local VIM = game:GetService("VirtualInputManager")
@@ -8,15 +8,14 @@ local Player = game.Players.LocalPlayer
 local clicking = false
 local clickDelay = 0.05
 local clickPosition = nil
-
 local hideKey = Enum.KeyCode.RightShift
 local listeningForKey = false
-
 local clickThread = nil
 
 -- ================= GUI =================
-local gui = Instance.new("ScreenGui", game.CoreGui)
+local gui = Instance.new("ScreenGui")
 gui.Name = "AutoClickHub"
+gui.Parent = game.CoreGui
 gui.ResetOnSpawn = false
 
 local main = Instance.new("Frame", gui)
@@ -44,7 +43,7 @@ statusDot.BackgroundColor3 = Color3.fromRGB(255,0,0)
 statusDot.BorderSizePixel = 0
 Instance.new("UICorner", statusDot).CornerRadius = UDim.new(1,0)
 
--- Start
+-- Start Button
 local startBtn = Instance.new("TextButton", main)
 startBtn.Size = UDim2.new(0.45,0,0,35)
 startBtn.Position = UDim2.new(0.05,0,0,50)
@@ -53,7 +52,7 @@ startBtn.Font = Enum.Font.GothamBold
 startBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
 startBtn.TextColor3 = Color3.new(1,1,1)
 
--- Stop
+-- Stop Button
 local stopBtn = Instance.new("TextButton", main)
 stopBtn.Size = UDim2.new(0.45,0,0,35)
 stopBtn.Position = UDim2.new(0.5,0,0,50)
@@ -78,54 +77,60 @@ pickBtn.Font = Enum.Font.GothamBold
 pickBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
 pickBtn.TextColor3 = Color3.new(1,1,1)
 
--- Change Keybind
+-- Keybind Button
 local keyBtn = Instance.new("TextButton", main)
 keyBtn.Size = UDim2.new(0.9,0,0,30)
 keyBtn.Position = UDim2.new(0.05,0,0,180)
-keyBtn.Text = "Tecla do HUB: RightShift"
+keyBtn.Text = "Tecla HUB: RightShift"
 keyBtn.Font = Enum.Font.Gotham
 keyBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
 keyBtn.TextColor3 = Color3.new(1,1,1)
 
--- ================= FUNCTIONS =================
-
--- CLICK LOOP
+-- ================= CLICK LOOP =================
 local function startClickLoop()
 	if clickThread then return end
+
 	clickThread = task.spawn(function()
 		while clicking do
-			if clickPosition then
-				VIM:SendMouseButtonEvent(
-					clickPosition.X, clickPosition.Y, 0, true, game, 0
-				)
-				VIM:SendMouseButtonEvent(
-					clickPosition.X, clickPosition.Y, 0, false, game, 0
-				)
-			end
+			VIM:SendMouseButtonEvent(
+				clickPosition.X,
+				clickPosition.Y,
+				0,
+				true,
+				game,
+				0
+			)
+			VIM:SendMouseButtonEvent(
+				clickPosition.X,
+				clickPosition.Y,
+				0,
+				false,
+				game,
+				0
+			)
 			task.wait(clickDelay)
 		end
 		clickThread = nil
 	end)
 end
 
--- Start
+-- ================= BUTTONS =================
 startBtn.MouseButton1Click:Connect(function()
-	if tonumber(cpsBox.Text) then
-		clickDelay = 1 / tonumber(cpsBox.Text)
-	end
 	if not clickPosition then return end
+	local cps = tonumber(cpsBox.Text)
+	if cps and cps > 0 then
+		clickDelay = 1 / cps
+	end
 	clicking = true
 	statusDot.BackgroundColor3 = Color3.fromRGB(0,255,0)
 	startClickLoop()
 end)
 
--- Stop
 stopBtn.MouseButton1Click:Connect(function()
 	clicking = false
 	statusDot.BackgroundColor3 = Color3.fromRGB(255,0,0)
 end)
 
--- Pick position (FIXO)
 pickBtn.MouseButton1Click:Connect(function()
 	pickBtn.Text = "CLIQUE NA TELA..."
 	local conn
@@ -138,24 +143,22 @@ pickBtn.MouseButton1Click:Connect(function()
 	end)
 end)
 
--- Change keybind
 keyBtn.MouseButton1Click:Connect(function()
 	listeningForKey = true
 	keyBtn.Text = "Pressione uma tecla..."
 end)
 
+-- ================= INPUT =================
 UIS.InputBegan:Connect(function(input, gpe)
 	if gpe then return end
 
-	-- Captura nova tecla
 	if listeningForKey then
 		hideKey = input.KeyCode
-		keyBtn.Text = "Tecla do HUB: "..hideKey.Name
+		keyBtn.Text = "Tecla HUB: "..hideKey.Name
 		listeningForKey = false
 		return
 	end
 
-	-- Hide / Show HUB
 	if input.KeyCode == hideKey then
 		gui.Enabled = not gui.Enabled
 	end
