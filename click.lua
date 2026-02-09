@@ -1,169 +1,141 @@
---[[ 
-  Auto Click Hub - Profissional
-  Click infinito sem mover mouse
---]]
+-- AUTO CLICK HUB PROFISSIONAL
+-- by ChatGPT 😎
 
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local UIS = game:GetService("UserInputService")
+local VIM = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
+local Player = game.Players.LocalPlayer
 
-local player = Players.LocalPlayer
-
--- ================= VARIÁVEIS =================
+-- CONFIG
 local clicking = false
-local clickDelay = 0.1
-local hideKey = Enum.KeyCode.RightShift
-local guiVisible = true
+local clickDelay = 0.05
+local clickPos = nil
+local hideKey = Enum.KeyCode.RightControl
 
--- ================= GUI =================
-local gui = Instance.new("ScreenGui")
+-- GUI
+local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "AutoClickHub"
 gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
 
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 360, 0, 260)
-main.Position = UDim2.new(0.5, -180, 0.5, -130)
+main.Size = UDim2.new(0, 300, 0, 220)
+main.Position = UDim2.new(0.5, -150, 0.5, -110)
 main.BackgroundColor3 = Color3.fromRGB(25,25,25)
 main.BorderSizePixel = 0
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+main.Active = true
+main.Draggable = true
 
--- ================= TÍTULO =================
+-- Título
 local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Text = "Auto Click Hub"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 20
-title.TextColor3 = Color3.new(1,1,1)
+title.Size = UDim2.new(1,0,0,35)
 title.BackgroundTransparency = 1
+title.Text = "AUTO CLICK HUB"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
 
--- ================= ABAS =================
-local tabButtons = Instance.new("Frame", main)
-tabButtons.Size = UDim2.new(1, -20, 0, 30)
-tabButtons.Position = UDim2.new(0, 10, 0, 45)
-tabButtons.BackgroundTransparency = 1
+-- Status Dot
+local statusDot = Instance.new("Frame", main)
+statusDot.Size = UDim2.new(0,12,0,12)
+statusDot.Position = UDim2.new(1,-20,0,12)
+statusDot.BackgroundColor3 = Color3.fromRGB(255,0,0)
+statusDot.BorderSizePixel = 0
+Instance.new("UICorner", statusDot).CornerRadius = UDim.new(1,0)
 
-local clickTabBtn = Instance.new("TextButton", tabButtons)
-clickTabBtn.Size = UDim2.new(0.5, -5, 1, 0)
-clickTabBtn.Text = "Auto Click"
-clickTabBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-clickTabBtn.TextColor3 = Color3.new(1,1,1)
-clickTabBtn.Font = Enum.Font.Gotham
-Instance.new("UICorner", clickTabBtn)
+-- Start Button
+local start = Instance.new("TextButton", main)
+start.Size = UDim2.new(0.45,0,0,35)
+start.Position = UDim2.new(0.05,0,0,50)
+start.Text = "INICIAR"
+start.Font = Enum.Font.GothamBold
+start.TextSize = 14
+start.BackgroundColor3 = Color3.fromRGB(0,170,0)
+start.TextColor3 = Color3.new(1,1,1)
 
-local settingsTabBtn = Instance.new("TextButton", tabButtons)
-settingsTabBtn.Size = UDim2.new(0.5, -5, 1, 0)
-settingsTabBtn.Position = UDim2.new(0.5, 5, 0, 0)
-settingsTabBtn.Text = "Config"
-settingsTabBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-settingsTabBtn.TextColor3 = Color3.new(1,1,1)
-settingsTabBtn.Font = Enum.Font.Gotham
-Instance.new("UICorner", settingsTabBtn)
+-- Stop Button
+local stop = Instance.new("TextButton", main)
+stop.Size = UDim2.new(0.45,0,0,35)
+stop.Position = UDim2.new(0.5,0,0,50)
+stop.Text = "PARAR"
+stop.Font = Enum.Font.GothamBold
+stop.TextSize = 14
+stop.BackgroundColor3 = Color3.fromRGB(170,0,0)
+stop.TextColor3 = Color3.new(1,1,1)
 
--- ================= CONTEÚDO =================
-local clickTab = Instance.new("Frame", main)
-clickTab.Size = UDim2.new(1, -20, 1, -90)
-clickTab.Position = UDim2.new(0, 10, 0, 85)
-clickTab.BackgroundTransparency = 1
+-- CPS Box
+local cpsBox = Instance.new("TextBox", main)
+cpsBox.Size = UDim2.new(0.9,0,0,30)
+cpsBox.Position = UDim2.new(0.05,0,0,100)
+cpsBox.PlaceholderText = "Velocidade (ex: 20 CPS)"
+cpsBox.Text = ""
+cpsBox.Font = Enum.Font.Gotham
+cpsBox.TextSize = 14
 
-local settingsTab = clickTab:Clone()
-settingsTab.Parent = main
-settingsTab.Visible = false
+-- Pick Position
+local pick = Instance.new("TextButton", main)
+pick.Size = UDim2.new(0.9,0,0,30)
+pick.Position = UDim2.new(0.05,0,0,140)
+pick.Text = "ESCOLHER POSIÇÃO DO CLICK"
+pick.Font = Enum.Font.GothamBold
+pick.TextSize = 13
+pick.BackgroundColor3 = Color3.fromRGB(60,60,60)
+pick.TextColor3 = Color3.new(1,1,1)
 
--- ================= AUTO CLICK TAB =================
-local speedBox = Instance.new("TextBox", clickTab)
-speedBox.Size = UDim2.new(1, 0, 0, 35)
-speedBox.PlaceholderText = "Velocidade (ms)"
-speedBox.Text = ""
-speedBox.BackgroundColor3 = Color3.fromRGB(45,45,45)
-speedBox.TextColor3 = Color3.new(1,1,1)
-speedBox.Font = Enum.Font.Gotham
-Instance.new("UICorner", speedBox)
+-- Keybind Info
+local keyInfo = Instance.new("TextLabel", main)
+keyInfo.Size = UDim2.new(1,0,0,25)
+keyInfo.Position = UDim2.new(0,0,1,-25)
+keyInfo.BackgroundTransparency = 1
+keyInfo.Text = "Tecla para esconder: RightCtrl"
+keyInfo.TextColor3 = Color3.fromRGB(200,200,200)
+keyInfo.Font = Enum.Font.Gotham
+keyInfo.TextSize = 12
 
-local startBtn = Instance.new("TextButton", clickTab)
-startBtn.Size = UDim2.new(1, 0, 0, 40)
-startBtn.Position = UDim2.new(0, 0, 0, 50)
-startBtn.Text = "▶ CONTINUAR"
-startBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
-startBtn.TextColor3 = Color3.new(1,1,1)
-startBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", startBtn)
-
-local stopBtn = Instance.new("TextButton", clickTab)
-stopBtn.Size = UDim2.new(1, 0, 0, 40)
-stopBtn.Position = UDim2.new(0, 0, 0, 100)
-stopBtn.Text = "■ PARAR"
-stopBtn.BackgroundColor3 = Color3.fromRGB(170,0,0)
-stopBtn.TextColor3 = Color3.new(1,1,1)
-stopBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", stopBtn)
-
--- ================= CONFIG TAB =================
-local keyLabel = Instance.new("TextLabel", settingsTab)
-keyLabel.Size = UDim2.new(1, 0, 0, 40)
-keyLabel.Text = "Tecla para esconder Hub:"
-keyLabel.Font = Enum.Font.Gotham
-keyLabel.TextColor3 = Color3.new(1,1,1)
-keyLabel.BackgroundTransparency = 1
-
-local keyBind = Instance.new("TextLabel", settingsTab)
-keyBind.Size = UDim2.new(1, 0, 0, 40)
-keyBind.Position = UDim2.new(0, 0, 0, 45)
-keyBind.Text = hideKey.Name
-keyBind.Font = Enum.Font.GothamBold
-keyBind.TextColor3 = Color3.fromRGB(0,170,255)
-keyBind.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Instance.new("UICorner", keyBind)
-
--- ================= FUNÇÕES =================
-speedBox.FocusLost:Connect(function()
-	local ms = tonumber(speedBox.Text)
-	if ms and ms > 0 then
-		clickDelay = ms / 1000
-	end
-end)
-
-startBtn.MouseButton1Click:Connect(function()
-	clicking = true
-end)
-
-stopBtn.MouseButton1Click:Connect(function()
-	clicking = false
-end)
-
-clickTabBtn.MouseButton1Click:Connect(function()
-	clickTab.Visible = true
-	settingsTab.Visible = false
-end)
-
-settingsTabBtn.MouseButton1Click:Connect(function()
-	clickTab.Visible = false
-	settingsTab.Visible = true
-end)
-
--- ================= CLICK LOOP (SEM MOVER MOUSE) =================
+-- CLICK LOOP
 task.spawn(function()
 	while true do
-		if clicking then
-			VirtualInputManager:SendMouseButtonEvent(
-				0, 0, 0, true, game, 0
+		if clicking and clickPos then
+			VIM:SendMouseButtonEvent(
+				clickPos.X, clickPos.Y, 0, true, game, 0
 			)
-			VirtualInputManager:SendMouseButtonEvent(
-				0, 0, 0, false, game, 0
+			VIM:SendMouseButtonEvent(
+				clickPos.X, clickPos.Y, 0, false, game, 0
 			)
-			task.wait(clickDelay)
-		else
-			task.wait(0.1)
 		end
+		task.wait(clickDelay)
 	end
 end)
 
--- ================= KEYBIND ESCONDER HUB =================
-UserInputService.InputBegan:Connect(function(input, gp)
-	if gp then return end
+-- FUNÇÕES
+start.MouseButton1Click:Connect(function()
+	if tonumber(cpsBox.Text) then
+		clickDelay = 1 / tonumber(cpsBox.Text)
+	end
+	clicking = true
+	statusDot.BackgroundColor3 = Color3.fromRGB(0,255,0)
+end)
+
+stop.MouseButton1Click:Connect(function()
+	clicking = false
+	statusDot.BackgroundColor3 = Color3.fromRGB(255,0,0)
+end)
+
+pick.MouseButton1Click:Connect(function()
+	pick.Text = "CLIQUE NA TELA..."
+	local conn
+	conn = UIS.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			clickPos = UIS:GetMouseLocation()
+			pick.Text = "POSIÇÃO DEFINIDA ✔"
+			conn:Disconnect()
+		end
+	end)
+end)
+
+-- HIDE HUB
+UIS.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
 	if input.KeyCode == hideKey then
-		guiVisible = not guiVisible
-		gui.Enabled = guiVisible
+		gui.Enabled = not gui.Enabled
 	end
 end)
